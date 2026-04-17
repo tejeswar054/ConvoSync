@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -17,7 +18,7 @@ app.get("/", (req, res) => {
 });
 
 // MongoDB connection
-const mongoUri = process.env.MONGODB_URI || "mongodb+srv://panchireddyteja9:Teja%402436@cluster0.yb9ykbv.mongodb.net/?retryWrites=true&w=majority";
+const mongoUri = process.env.MONGODB_URI;
 
 mongoose.connect(mongoUri)
 .then(() => console.log("MongoDB Connected"))
