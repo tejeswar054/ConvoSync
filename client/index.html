@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat App</title>
+</head>
+<body>
+  <h1>Chat App</h1>
+  <input id="msg" placeholder="Enter message" />
+  <button onclick="sendMessage()">Send</button>
+
+  <ul id="messages"></ul>
+
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+
+  <script>
+  const userId = prompt("enter your userId:")
+  if (!userId){
+    alert("userId is required");
+    throw new console.error("userid is missing");
+  }
+  const socket = io("http://localhost:3000",{
+    auth:{userId}
+  });
+
+  function sendMessage() {
+    const msg = document.getElementById("msg").value;
+    to = prompt("enter receiver userId:")
+
+    socket.emit("send_message", {
+      to,
+      message:msg
+    });
+  }
+
+  socket.on("receive_message", (msg) => {
+    const li = document.createElement("li");
+    li.textContent = `${msg.from}: ${msg.message}`;
+    document.getElementById("messages").appendChild(li);
+  });
+  </script>
+</script>
+</body>
+</html>
