@@ -3,9 +3,13 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
+
+// Serve static files from client folder
+app.use(express.static(path.join(__dirname, "../client")));
 
 const io = new Server(server, {
     cors: {
@@ -14,7 +18,7 @@ const io = new Server(server, {
 });
 
 app.get("/", (req, res) => {
-    res.send("Server is running");
+    res.sendFile(path.join(__dirname, "../client/index.html"));
 });
 
 // MongoDB connection
@@ -81,6 +85,20 @@ io.on("connection", async (socket) => {
         { status: "delivered" }
     );
 
+    const conversationMessages = await Message.find({
+        $or : [
+            {to : userId},
+            {from : userId}
+        ]
+    })
+    .sort({time : -1})
+    .limit(5);
+    conversationMessages.reverse().forEach(msg => {
+        socket.emit("receive_message",{
+            from : msg.from,
+            message : msg.message
+        });
+    });
     // =============================
     // 3️⃣ SEND MESSAGE
     // =============================
@@ -105,7 +123,6 @@ io.on("connection", async (socket) => {
 
         // if receiver is online
         if (receiverSockets) {
-
             receiverSockets.forEach(id => {
                 io.to(id).emit("receive_message", {
                     from,
@@ -119,6 +136,26 @@ io.on("connection", async (socket) => {
                 { status: "delivered" }
             );
         }
+    });
+
+    socket.on("message_read", async ({from}) => {
+        const to = socket.handshake.auth.userId
+        await Message.updateMany({
+            from : from,
+            to : to,
+            status: "delivered"
+        }, {
+            status : "read"
+        }
+    );
+    const senderSockets = userSocketMap[from];
+    if (senderSockets){
+        senderSockets.forEach(id => {
+            io.to(id).emit("message_read_ack",{
+                to
+            });
+        });
+    }
     });
 
     // =============================
