@@ -45,6 +45,7 @@ const Message = mongoose.model("Message", messageSchema);
 
 // userId → socketIds mapping
 let userSocketMap = {};
+let onlineUsers = {};
 
 io.on("connection", async (socket) => {
 
@@ -60,6 +61,12 @@ io.on("connection", async (socket) => {
     userSocketMap[userId].push(socket.id);
 
     console.log("New user connected:", userId, socket.id);
+
+    onlineUsers[userId] = true;
+    io.emit("user_status",{
+        userId,
+        status : "online"
+    })
 
     // =============================
     // 2️⃣ OFFLINE MESSAGES DELIVERY
@@ -136,7 +143,17 @@ io.on("connection", async (socket) => {
                 { status: "delivered" }
             );
         }
+        const senderSockets = userSocketMap[from];
+        if (senderSockets){
+            senderSockets.forEach(id => {
+                io.to(id).emit("receive_message",{
+                    from,
+                    message
+                });
+            });
+        }
     });
+    
 
     socket.on("message_read", async ({from}) => {
         const to = socket.handshake.auth.userId
@@ -174,6 +191,11 @@ io.on("connection", async (socket) => {
         }
 
         console.log("Updated Map:", userSocketMap);
+        delete onlineUsers[userId];
+        io.emit("user_status",{
+            userId,
+            status:"offline"
+        });
     });
 });
 

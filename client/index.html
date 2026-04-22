@@ -16,7 +16,7 @@
   const userId = prompt("enter your userId:")
   if (!userId){
     alert("userId is required");
-    throw new console.error("userid is missing");
+    throw new Error("userid is missing");
   }
   const socket = io("http://localhost:3000",{
     auth:{userId}
@@ -24,7 +24,7 @@
 
   function sendMessage() {
     const msg = document.getElementById("msg").value;
-    to = prompt("enter receiver userId:")
+    const to = prompt("enter receiver userId:")
 
     socket.emit("send_message", {
       to,
@@ -36,6 +36,12 @@
     const li = document.createElement("li");
     li.textContent = `${msg.from}: ${msg.message}`;
     document.getElementById("messages").appendChild(li);
+    socket.emit("message_read",{
+      form : msg.from
+    });
+  });
+  socket.on("user_status",(data) => {
+    console.log(`${data.userId} is ${data.status}`);
   });
   </script>
 </script>
