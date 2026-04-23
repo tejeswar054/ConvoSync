@@ -46,6 +46,7 @@ const Message = mongoose.model("Message", messageSchema);
 // userId → socketIds mapping
 let userSocketMap = {};
 let onlineUsers = {};
+let lastSeen = {};
 
 io.on("connection", async (socket) => {
 
@@ -66,7 +67,13 @@ io.on("connection", async (socket) => {
     io.emit("user_status",{
         userId,
         status : "online"
-    })
+    });
+
+    // send all online users to this new user
+    socket.emit("all_users_status", {
+        onlineUsers,
+        lastSeen
+    });
 
     // =============================
     // 2️⃣ OFFLINE MESSAGES DELIVERY
@@ -82,6 +89,7 @@ io.on("connection", async (socket) => {
     messages.forEach(msg => {
         socket.emit("receive_message", {
             from: msg.from,
+            to: msg.to,
             message: msg.message
         });
     });
@@ -103,6 +111,7 @@ io.on("connection", async (socket) => {
     conversationMessages.reverse().forEach(msg => {
         socket.emit("receive_message",{
             from : msg.from,
+            to : msg.to,
             message : msg.message
         });
     });
@@ -133,6 +142,7 @@ io.on("connection", async (socket) => {
             receiverSockets.forEach(id => {
                 io.to(id).emit("receive_message", {
                     from,
+                    to,
                     message
                 });
             });
@@ -148,6 +158,7 @@ io.on("connection", async (socket) => {
             senderSockets.forEach(id => {
                 io.to(id).emit("receive_message",{
                     from,
+                    to,
                     message
                 });
             });
@@ -188,14 +199,18 @@ io.on("connection", async (socket) => {
 
         if (userSocketMap[userId].length === 0) {
             delete userSocketMap[userId];
+            lastSeen[userId] = new Date();
+
+            io.emit("user_status",{
+            userId,
+            status:"offline",
+            lastSeen: lastSeen[userId]
+            });
         }
 
         console.log("Updated Map:", userSocketMap);
         delete onlineUsers[userId];
-        io.emit("user_status",{
-            userId,
-            status:"offline"
-        });
+        
     });
 });
 
