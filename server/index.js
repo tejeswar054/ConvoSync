@@ -63,6 +63,23 @@ io.on("connection", async (socket) => {
 
     console.log("New user connected:", userId, socket.id);
 
+    socket.on("get_users", async() => {
+        const userId = socket.handshake.auth.userId;
+        const messages = await Message.find({
+            $or: [
+                {from : userId},
+                {to : userId}
+            ]
+        });
+        const users = new Set();
+        messages.forEach(msg => {
+            if(msg.from !== userId) users.add(msg.from);
+            if (msg.to !== userId) users.add(msg.to);
+        });
+        socket.emit("user_list",Array.from(users));
+    });
+    
+
     onlineUsers[userId] = true;
     io.emit("user_status",{
         userId,
@@ -100,21 +117,6 @@ io.on("connection", async (socket) => {
         { status: "delivered" }
     );
 
-    const conversationMessages = await Message.find({
-        $or : [
-            {to : userId},
-            {from : userId}
-        ]
-    })
-    .sort({time : -1})
-    .limit(5);
-    conversationMessages.reverse().forEach(msg => {
-        socket.emit("receive_message",{
-            from : msg.from,
-            to : msg.to,
-            message : msg.message
-        });
-    });
     // =============================
     // 3️⃣ SEND MESSAGE
     // =============================
@@ -186,6 +188,64 @@ io.on("connection", async (socket) => {
     }
     });
 
+    socket.on("load_messages", async ({ to }) => {
+        const from = socket.handshake.auth.userId;
+
+        const messages = await Message.find({
+            $or: [
+                { from, to },
+                { from: to, to: from }
+            ]
+        })
+        .sort({ time: -1 })
+        .limit(20);
+
+        messages.reverse().forEach(msg => {
+            socket.emit("receive_message", {
+                from: msg.from,
+                to: msg.to,
+                message: msg.message
+            });
+        });
+
+        await Message.updateMany(
+            { to: from, status: "sent" },
+            { status: "delivered" }
+        );
+    });
+
+    socket.on("get_users_status", () => {
+        socket.emit("all_users_status", {
+            onlineUsers,
+            lastSeen
+        });
+    });
+
+    // =============================
+    // 5️⃣ TYPING INDICATORS
+    // =============================
+    socket.on("typing", ({ to }) => {
+        const from = socket.handshake.auth.userId;
+        const receiverSockets = userSocketMap[to];
+
+        if (receiverSockets) {
+            receiverSockets.forEach(id => {
+                io.to(id).emit("typing", { from });
+            });
+        }
+    });
+
+    socket.on("stop_typing", ({ to }) => {
+        const from = socket.handshake.auth.userId;
+        const receiverSockets = userSocketMap[to];
+
+        if (receiverSockets) {
+            receiverSockets.forEach(id => {
+                io.to(id).emit("stop_typing", { from });
+            });
+        }
+    });
+
     // =============================
     // 4️⃣ DISCONNECT HANDLING
     // =============================
@@ -199,6 +259,7 @@ io.on("connection", async (socket) => {
 
         if (userSocketMap[userId].length === 0) {
             delete userSocketMap[userId];
+            delete onlineUsers[userId];
             lastSeen[userId] = new Date();
 
             io.emit("user_status",{
@@ -209,7 +270,6 @@ io.on("connection", async (socket) => {
         }
 
         console.log("Updated Map:", userSocketMap);
-        delete onlineUsers[userId];
         
     });
 });

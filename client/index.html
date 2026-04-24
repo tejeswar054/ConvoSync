@@ -80,15 +80,43 @@
     .chat-input button:hover {
       background: #0056b3;
     }
+    .app {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    #userList {
+      width: 200px;
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      list-style: none;
+      margin: 0;
+    }
+    #userList li {
+      padding: 10px;
+      margin-bottom: 5px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #userList li:hover {
+      background: #e0e0e0;
+    }
   </style>
 </head>
 <body>
+  <div class="app">
+    <ul id="userList"></ul>
 
   <div class="chat-container">
 
     <div class="chat-header">
       <h2 id="chatWith"></h2>
       <p id = "status"></p>
+      <p id="typing"></p>
     </div>
 
     <div id="messages" class="chat-box"></div>
@@ -100,6 +128,8 @@
 
   </div>
 
+  </div>
+
   <script src="http://localhost:3000/socket.io/socket.io.js"></script>
 
   <script>
@@ -108,18 +138,55 @@
     alert("userId is required");
     throw new Error("userid is missing");
   }
+  let receiverId = null;
 
-  const receiverId = prompt("enter receiver userId:")
-    if (!receiverId){
-      alert("receiverid is required ");
-      throw new Error("receiverId missing")
-    }
 
   const socket = io("http://localhost:3000",{
     auth:{userId}
   });
+  socket.emit("get_users");
+  socket.on("user_list",(users) => {
+    const list = document.getElementById("userList");
+    list.innerHTML = "";
+    users.forEach(user => {
+      const li = document.createElement("li")
+      li.textContent = user;
+      li.onclick = () => {
+        receiverId = user;
+        document.getElementById("messages").innerHTML = "";
+        document.getElementById("chatWith").textContent = "Chat with " + receiverId;
+        document.getElementById("typing").textContent = "";
+        document.getElementById("status").textContent = "";
+        socket.emit("load_messages", { to: receiverId });
+        socket.emit("get_users_status");
+      };
+      list.appendChild(li);
+    });
+  });
 
-  document.getElementById("chatWith").textContent = "Chat with " + receiverId;
+  const input = document.getElementById("msg");
+  let isTyping = false;
+  let typingTimeout;
+
+  input.addEventListener("input", () => {
+    if (!receiverId) return;
+    if (!isTyping){
+      socket.emit("typing", {
+      to: receiverId
+      });
+      isTyping = true;
+    }
+    
+
+    clearTimeout(typingTimeout);
+
+    typingTimeout = setTimeout(() => {
+      socket.emit("stop_typing", {
+        to: receiverId
+      });
+      isTyping = false;
+    }, 1000);
+  });
 
   function sendMessage() {
     const msg = document.getElementById("msg").value;
@@ -127,6 +194,7 @@
       to : receiverId,
       message:msg
     });
+    socket.emit("stop_typing",{to:receiverId});
     document.getElementById("msg").value = "";
   }
 
@@ -154,7 +222,9 @@
       const chatBox = document.getElementById("messages");
       chatBox.scrollTop = chatBox.scrollHeight;
 
-      socket.emit("message_read", { from: msg.from });
+      if (msg.from !== userId) {
+        socket.emit("message_read", { from: msg.from });
+      }
     }
 
   });
@@ -181,6 +251,16 @@
       statusEl.textContent = "Offline 🔴";
     }
 
+  });
+
+  socket.on("typing", (data) => {
+    if (data.from !== receiverId) return;
+    document.getElementById("typing").textContent = receiverId + " is typing...";
+  });
+
+  socket.on("stop_typing", (data) => {
+    if (data.from !== receiverId) return;
+    document.getElementById("typing").textContent = "";
   });
   </script>
 
