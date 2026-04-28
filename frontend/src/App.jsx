@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { createSocket } from "./socket/socket";
 import Sidebar from "./sidebar";
+import ChatWindow from "./components/ChatWindow";
 
 function App() {
   const [userId, setUserId] = useState("");
   const [socket, setSocket] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
 
   useEffect(() => {
     const id = prompt("Enter your userId");
@@ -23,15 +25,17 @@ function App() {
         socket={socket}
         selectedUser={selectedUser}
         setSelectedUser={setSelectedUser}
+        unreadCounts={unreadCounts}
+        setUnreadCounts={setUnreadCounts}
       />
 
-      <div style={{ padding: "20px" }}>
-        <h2>
-          {selectedUser
-            ? `Chat with ${selectedUser}`
-            : "Select a user"}
-        </h2>
-      </div>
+      <ChatWindow
+        socket={socket}
+        userId={userId}
+        selectedUser={selectedUser}
+        unreadCounts={unreadCounts}
+        setUnreadCounts={setUnreadCounts}
+      />
     </div>
   );
 }

@@ -50,7 +50,21 @@ const chatSocket = (io) => {
         if (msg.to !== userId) users.add(msg.to);
       });
 
-      socket.emit("user_list", Array.from(users));
+      // Calculate unread counts from DB
+      const unreadCounts = {};
+
+      for (const user of users) {
+        unreadCounts[user] = await Message.countDocuments({
+          from: user,
+          to: userId,
+          status: { $in: ["sent", "delivered"] }
+        });
+      }
+
+      socket.emit("user_list", {
+        users: Array.from(users),
+        unreadCounts
+      });
     });
 
     // =============================
@@ -68,11 +82,12 @@ const chatSocket = (io) => {
       .sort({ time: 1 })
       .limit(20);
 
-      messages.forEach(msg => {
+      messages.reverse().forEach(msg => {
         socket.emit("receive_message", {
           from: msg.from,
           to: msg.to,
-          message: msg.message
+          message: msg.message,
+          status: msg.status
         });
       });
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-function Sidebar({ socket, setSelectedUser, selectedUser }) {
+function Sidebar({ socket, setSelectedUser, selectedUser, unreadCounts, setUnreadCounts }) {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -9,9 +9,10 @@ function Sidebar({ socket, setSelectedUser, selectedUser }) {
     // ask backend
     socket.emit("get_users");
 
-    // receive users
-    socket.on("user_list", (userList) => {
-      setUsers(userList);
+    // receive users and unread counts
+    socket.on("user_list", ({ users, unreadCounts }) => {
+      setUsers(users);
+      setUnreadCounts(unreadCounts);
     });
 
     return () => socket.off("user_list");
@@ -31,7 +32,7 @@ function Sidebar({ socket, setSelectedUser, selectedUser }) {
           }}
           onClick={() => setSelectedUser(user)}
         >
-          {user}
+          {user} {unreadCounts[user] ? `(${unreadCounts[user]})` : ""}
         </div>
       ))}
     </div>
