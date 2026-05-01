@@ -3,15 +3,26 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
+const authRoutes = require("./routes/auth");
 
 const connectDB = require("./config/db");
 const chatSocket = require("./socket/chat");
+const authMiddleware = require("./middleware/authMiddleware");
 
 const app = express();
 const server = http.createServer(app);
 
 // Serve static files from client folder
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "../client")));
+app.use("/api/auth",authRoutes);
+
+app.get("/api/protected",authMiddleware,(req,res) => {
+  res.status(200).json({
+    message:"Protected route accessed",
+    user : req.user
+  });
+});
 
 const io = new Server(server, {
   cors: {
@@ -36,3 +47,5 @@ const io = new Server(server, {
     console.log("Server running on port 3000");
   });
 })();
+
+
