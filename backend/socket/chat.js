@@ -1,4 +1,5 @@
 const Message = require("../models/Message");
+const jwt = require("jsonwebtoken")
 
 // userId → socketIds mapping
 let userSocketMap = {};
@@ -7,7 +8,27 @@ let lastSeen = {};
 
 const chatSocket = (io) => {
   io.on("connection", async (socket) => {
-    const userId = socket.handshake.auth.userId;
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+        socket.disconnect();
+        return;
+    }
+
+    try {
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+        socket.user = decoded;
+
+    } catch (error) {
+        socket.disconnect();
+        return;
+    }
+
+    const userId = socket.user.username;
 
     // =============================
     // 1️⃣ ADD USER SOCKET
@@ -111,7 +132,7 @@ const chatSocket = (io) => {
     // SEND MESSAGE
     // =============================
     socket.on("send_message", async ({ to, message }) => {
-      const from = userId;
+      const from = socket.user.username;
 
       if (!from) {
         console.log("Invalid user, message ignored");

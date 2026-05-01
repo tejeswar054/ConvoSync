@@ -4,6 +4,7 @@ const http = require("http");
 const { Server } = require("socket.io");
 const path = require("path");
 const authRoutes = require("./routes/auth");
+const cors = require("cors");
 
 const connectDB = require("./config/db");
 const chatSocket = require("./socket/chat");
@@ -13,6 +14,7 @@ const app = express();
 const server = http.createServer(app);
 
 // Serve static files from client folder
+app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../client")));
 app.use("/api/auth",authRoutes);
