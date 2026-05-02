@@ -1,0 +1,127 @@
+.chatpage-container {
+  display: flex;
+  height: 100vh;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.chatpage-header {
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 200px;
+  height: 60px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), rgba(170, 59, 255, 0.6));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text-h);
+  font-size: 15px;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.logout-btn:active {
+  transform: scale(0.98);
+}
+
+.sidebar-wrapper {
+  width: 200px;
+  height: 100vh;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.chat-wrapper {
+  flex: 1;
+  margin-top: 60px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* Scrollbar styling */
+.sidebar-wrapper::-webkit-scrollbar,
+.chat-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-wrapper::-webkit-scrollbar-track,
+.chat-wrapper::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.sidebar-wrapper::-webkit-scrollbar-thumb,
+.chat-wrapper::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.sidebar-wrapper::-webkit-scrollbar-thumb:hover,
+.chat-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--text);
+}
+
+@media (max-width: 768px) {
+  .chatpage-header {
+    left: 0;
+  }
+
+  .sidebar-wrapper {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 200px;
+    height: 100vh;
+    z-index: 5;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .chat-wrapper {
+    margin-left: 200px;
+  }
+}

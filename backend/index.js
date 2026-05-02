@@ -2,8 +2,8 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const path = require("path");
 const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/userRoutes");
 const cors = require("cors");
 
 const connectDB = require("./config/db");
@@ -13,16 +13,16 @@ const authMiddleware = require("./middleware/authMiddleware");
 const app = express();
 const server = http.createServer(app);
 
-// Serve static files from client folder
+// Configure middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../client")));
-app.use("/api/auth",authRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
-app.get("/api/protected",authMiddleware,(req,res) => {
+app.get("/api/protected", authMiddleware, (req, res) => {
   res.status(200).json({
-    message:"Protected route accessed",
-    user : req.user
+    message: "Protected route accessed",
+    user: req.user
   });
 });
 
@@ -38,11 +38,6 @@ const io = new Server(server, {
 
   // Attach socket handlers
   chatSocket(io);
-
-  // Route
-  app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "../client/index.html"));
-  });
 
   // Start server
   server.listen(3000, () => {

@@ -79,6 +79,6 @@ router.post("/login",async (req,res) => {
             message: "Server error"
         });
     }
-}),
+});
 
 module.exports = router;

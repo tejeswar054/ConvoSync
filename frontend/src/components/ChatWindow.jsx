@@ -1,19 +1,40 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import "./ChatWindow.css";
 
-function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCounts }) {
+function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCounts, chatList, setChatList }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [status, setStatus] = useState("Offline 🔴");
   const [typing, setTyping] = useState("");
+  const messagesEndRef = useRef(null);
+  const chatListRef = useRef(chatList);  // ✅ Keep track of latest chatList
+
+  // ✅ Update ref whenever chatList changes
+  useEffect(() => {
+    chatListRef.current = chatList;
+  }, [chatList]);
+
+  // Auto-scroll to latest message
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     if (!socket || !selectedUser) return;
 
-    // clear old messages
     setMessages([]);
 
     // listen for messages
     socket.on("receive_message", (msg) => {
+      // ✅ Use ref to get LATEST chatList (not stale closure value)
+      // ✅ IMPORTANT: Don't add current user to their own chatList
+      if (msg.from !== userId && !chatListRef.current.includes(msg.from)) {
+        setChatList((prev) => [...prev, msg.from]);
+      }
 
       const isCurrentChat =
         (msg.from === userId && msg.to === selectedUser) ||
@@ -108,104 +129,85 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     setNewMessage("");
   };
 
-  return (
-    <div style={styles.container}>
-      <h2>
-        {selectedUser
-          ? `Chat with ${selectedUser}`
-          : "Select a user"}
-      </h2>
-      <p>{status}</p>
-      <p style={{ color: "#aaa", fontStyle: "italic" }}>
-        {typing}
-      </p>
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
 
-      <div style={styles.messages}>
+  if (!selectedUser) {
+    return (
+      <div className="chatwindow-container">
+        <div className="empty-chat">
+          <div style={{ fontSize: "48px", marginBottom: "10px" }}>💬</div>
+          <h2 style={{ margin: "0 0 8px 0" }}>No chat selected</h2>
+          <p style={{ margin: 0, color: "var(--text)" }}>
+            Select a conversation to start messaging
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chatwindow-container">
+      <div className="chatwindow-header">
+        <div className="chatwindow-title">
+          {selectedUser}
+        </div>
+        <div className="chatwindow-status">
+          {status}
+        </div>
+        <div className="chatwindow-typing">
+          {typing}
+        </div>
+      </div>
+
+      <div className="messages-container">
         {messages.map((msg, index) => (
           <div
             key={index}
-            style={{
-              ...styles.message,
-              alignSelf:
-                msg.from === userId ? "flex-end" : "flex-start",
-              backgroundColor:
-                msg.from === userId ? "#007bff" : "#e4e6eb",
-              color:
-                msg.from === userId ? "white" : "black",
-            }}
+            className={`message ${msg.from === userId ? "sent" : "received"}`}
           >
-            {msg.message}
+            <div className="message-content">
+              {msg.message}
+            </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
 
-      {selectedUser && (
-        <div style={styles.inputArea}>
-          <input
-            value={newMessage}
-            onChange={(e) => {
-              setNewMessage(e.target.value);
+      <div className="input-container">
+        <input
+          className="message-input"
+          type="text"
+          value={newMessage}
+          onChange={(e) => {
+            setNewMessage(e.target.value);
 
-              socket.emit("typing", { to: selectedUser });
+            socket.emit("typing", { to: selectedUser });
 
-              clearTimeout(window.typingTimeout);
+            clearTimeout(window.typingTimeout);
 
-              window.typingTimeout = setTimeout(() => {
-                socket.emit("stop_typing", { to: selectedUser });
-              }, 1000);
-            }}
-            placeholder="Type message..."
-            style={styles.input}
-          />
+            window.typingTimeout = setTimeout(() => {
+              socket.emit("stop_typing", { to: selectedUser });
+            }, 1000);
+          }}
+          onKeyPress={handleKeyPress}
+          placeholder="Type a message..."
+        />
 
-          <button onClick={sendMessage} style={styles.button}>
-            Send
-          </button>
-        </div>
-      )}
+        <button
+          className="send-button"
+          onClick={sendMessage}
+          disabled={!newMessage.trim()}
+        >
+          Send
+        </button>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    height: "100vh",
-    padding: "20px",
-  },
-  messages: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    overflowY: "auto",
-    paddingRight: "10px",
-    marginBottom: "10px",
-  },
-  message: {
-    padding: "10px",
-    borderRadius: "8px",
-    maxWidth: "60%",
-  },
-  inputArea: {
-    display: "flex",
-    gap: "10px",
-  },
-  input: {
-    flex: 1,
-    padding: "10px",
-  },
-  button: {
-    padding: "10px 20px",
-  },
-  inputArea: {
-    display: "flex",
-    gap: "10px",
-    paddingTop: "10px",
-    borderTop: "1px solid #333",
-  },
-};
 
 export default ChatWindow;

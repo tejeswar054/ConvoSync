@@ -1,56 +1,99 @@
 import { useEffect, useState } from "react";
+import "./sidebar.css";
 
-function Sidebar({ socket, setSelectedUser, selectedUser, unreadCounts, setUnreadCounts }) {
+function Sidebar({
+  socket,
+  setSelectedUser,
+  selectedUser,
+  unreadCounts,
+  setUnreadCounts,
+  chatList,
+  setChatList,
+  search,
+  searchResults,
+  handleSearch,
+  startNewChat
+}) {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
     if (!socket) return;
 
-    // ask backend
+    // Load initial users
     socket.emit("get_users");
 
-    // receive users and unread counts
+    // Receive users and unread counts
     socket.on("user_list", ({ users, unreadCounts }) => {
       setUsers(users);
+      setChatList(users); // Sync with chatList
       setUnreadCounts(unreadCounts);
     });
 
     return () => socket.off("user_list");
-  }, [socket]);
+  }, [socket, setChatList]);
+
+  // Display list depends on search
+  const displayList = search.trim() ? searchResults : users;
 
   return (
-    <div style={styles.sidebar}>
-      <h3>Chats</h3>
+    <div className="sidebar">
+      <h3>💬 Chats</h3>
 
-      {users.map((user) => (
-        <div
-          key={user}
-          style={{
-            ...styles.user,
-            backgroundColor: selectedUser === user ? "#007bff" : "#f1f1f1",
-            color: selectedUser === user ? "white" : "black",
-          }}
-          onClick={() => setSelectedUser(user)}
-        >
-          {user} {unreadCounts[user] ? `(${unreadCounts[user]})` : ""}
+      {/* SEARCH INPUT */}
+      <div className="sidebar-search">
+        <input
+          type="text"
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+          className="search-input"
+        />
+      </div>
+
+      {/* SEARCH RESULTS */}
+      {search.trim() && (
+        <div className="search-results">
+          {searchResults.length === 0 ? (
+            <div className="no-results">No users found</div>
+          ) : (
+            searchResults.map((user) => (
+              <div
+                key={user._id}
+                className="search-result-item"
+                onClick={() => startNewChat(user.username)}
+              >
+                <div className="search-result-name">{user.username}</div>
+                <div className="search-result-add">+ Add</div>
+              </div>
+            ))
+          )}
         </div>
-      ))}
+      )}
+
+      {/* CHAT LIST */}
+      <div className="sidebar-users">
+        {chatList.length === 0 ? (
+          <div style={{ color: "var(--text)", fontSize: "14px", padding: "15px" }}>
+            No chats yet. Search to start!
+          </div>
+        ) : (
+          chatList.map((user) => (
+            <div
+              key={user}
+              className={`user-item ${selectedUser === user ? "active" : ""}`}
+              onClick={() => setSelectedUser(user)}
+              title={user}
+            >
+              <div className="user-item-name">{user}</div>
+              {unreadCounts[user] > 0 && (
+                <div className="user-item-badge">{unreadCounts[user]}</div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }
-
-const styles = {
-  sidebar: {
-    width: "200px",
-    borderRight: "1px solid #ddd",
-    padding: "10px",
-  },
-  user: {
-    padding: "10px",
-    marginBottom: "5px",
-    cursor: "pointer",
-    borderRadius: "5px",
-  },
-};
 
 export default Sidebar;
