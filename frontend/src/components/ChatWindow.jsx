@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
+import { CldUploadWidget } from "next-cloudinary";
 import "./ChatWindow.css";
+const CLOUDINARY_CLOUD_NAME = "dzn51fdrx"; // cloud dashboard name 
 
 function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCounts, chatList, setChatList }) {
   const [messages, setMessages] = useState([]);
@@ -150,6 +152,24 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     );
   }
 
+  const handleUploadSuccess = (result) => {
+    // extract url form cloudinary response
+    const imageUrl = result.info.secure_url;
+    const fileName = result.info.original_filename || "image";
+    const fileSize = result.info.bytes || 0 ;
+
+    // send via socket.io with file info
+    socket.emit("send_message",{
+      to : selectedUser,
+      message: newMessage,
+      fileUrl : imageUrl,
+      fileName : fileName,
+      fileSize : fileSize,
+      fileType : "image"
+    });
+    setNewMessage("")
+  };
+
   return (
     <div className="chatwindow-container">
       <div className="chatwindow-header">
@@ -173,12 +193,47 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
             <div className="message-content">
               {msg.message}
             </div>
+            {/* ✅ Display file if exists */}
+            {msg.file && (
+              <div className="message-file">
+                {msg.file.type === "image" ? (
+                  <img 
+                    src={msg.file.url} 
+                    alt={msg.file.name}
+                    className="file-image"
+                  />
+                ) : (
+                  <a 
+                    href={msg.file.url} 
+                    download={msg.file.name}
+                    className="file-link"
+                  >
+                    📎 {msg.file.name}
+                  </a>
+                )}
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
 
       <div className="input-container">
+        <CldUploadWidget 
+          cloudName = {CLOUDINARY_CLOUD_NAME}
+          uploadPreset="convosync_upload"
+          onSuccess={handleUploadSuccess}
+        >
+          {({open}) => (
+            <button
+              type="button"
+              className="upload-btn"
+              onClick={() => open()}
+            >
+              📎
+            </button>
+          )}
+        </CldUploadWidget>
         <input
           className="message-input"
           type="text"

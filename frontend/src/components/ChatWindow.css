@@ -191,6 +191,56 @@
   transform: none;
 }
 
+/* ✅ File display styles */
+.message-file {
+  max-width: 60%;
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.file-image {
+  max-width: 100%;
+  max-height: 300px;
+  display: block;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.file-image:hover {
+  transform: scale(1.02);
+}
+
+.file-link {
+  display: inline-block;
+  padding: 10px 14px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  font-weight: 500;
+  font-size: 13px;
+  transition: all 0.2s ease;
+}
+
+.file-link:hover {
+  background: var(--accent);
+  color: white;
+  transform: translateY(-2px);
+}
+
+.message.sent .file-image,
+.message.sent .file-link {
+  border-radius: 8px 4px 8px 8px;
+}
+
+.message.received .file-image,
+.message.received .file-link {
+  border-radius: 4px 8px 8px 8px;
+}
+
 @media (max-width: 768px) {
   .message-content {
     max-width: 80%;

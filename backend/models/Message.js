@@ -12,7 +12,13 @@ const messageSchema = new mongoose.Schema({
   time: {
     type: Date,
     default: Date.now
-  }
+  },
+  file: new mongoose.Schema({
+    url: String,
+    name: String,
+    size: Number,
+    type: String
+  }, { _id: false })
 });
 
 module.exports = mongoose.model("Message", messageSchema);

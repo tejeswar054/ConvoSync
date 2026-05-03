@@ -131,7 +131,7 @@ const chatSocket = (io) => {
     // =============================
     // SEND MESSAGE
     // =============================
-    socket.on("send_message", async ({ to, message }) => {
+    socket.on("send_message", async ({ to, message, fileUrl, fileName, fileSize, fileType }) => {
       const from = socket.user.username;
 
       if (!from) {
@@ -139,13 +139,26 @@ const chatSocket = (io) => {
         return;
       }
 
-      // save message in DB
-      const newMessage = await Message.create({
+      // ✅ NEW: Create message object with optional file data
+      const messageData = {
         from,
         to,
         message,
         status: "sent"
-      });
+      };
+
+      // ✅ If file exists, add file information
+      if (fileUrl) {
+        messageData.file = {
+          url: fileUrl,
+          name: fileName,
+          size: fileSize,
+          type: fileType
+        };
+      }
+
+      // save message in DB
+      const newMessage = await Message.create(messageData);
 
       const receiverSockets = userSocketMap[to];
 
@@ -155,7 +168,8 @@ const chatSocket = (io) => {
           io.to(id).emit("receive_message", {
             from,
             to,
-            message
+            message,
+            file: newMessage.file  // ✅ Send file data to receiver
           });
         });
 
@@ -172,7 +186,8 @@ const chatSocket = (io) => {
           io.to(id).emit("receive_message", {
             from,
             to,
-            message
+            message,
+            file: newMessage.file
           });
         });
       }
