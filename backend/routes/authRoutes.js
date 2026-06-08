@@ -19,10 +19,15 @@ router.post("/register",async (req,res) => {
                 message:"Username must be max 20 characters"
             });
         }
+        if(password.length > 128){
+            return res.status(400).json({
+                message:"Password must be max 6 - 128 characters"
+            })
+        }
         if(!password || password.length < 6){
             return res.status(400).json({
                 message:"Password must be at least 6 characters"
-            });
+            });;
         }
         // check existing user
         const existingUser = await User.findOne({username});

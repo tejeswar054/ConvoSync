@@ -29,7 +29,12 @@ const authLimiter = rateLimit({
 });
 
 // Configure middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:5173", // Only frontend can access
+  credentials: true,
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 app.use(express.json());
 
 // apply rate limiters to all routes 
@@ -50,7 +55,9 @@ app.get("/api/protected", authMiddleware, (req, res) => {
 
 const io = new Server(server, {
   cors: {
-    origin: "*"
+    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Only frontend
+    credentials: true,
+    methods: ["GET", "POST"]
   }
 });
 
@@ -62,8 +69,9 @@ const io = new Server(server, {
   chatSocket(io);
 
   // Start server
-  server.listen(3000, () => {
-    console.log("Server running on port 3000");
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
   });
 })();
 
