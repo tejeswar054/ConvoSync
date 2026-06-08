@@ -12,6 +12,12 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
   const messagesEndRef = useRef(null);
   const chatListRef = useRef(chatList);  // ✅ Keep track of latest chatList
   const selectedUserRef = useRef(selectedUser);  // ✅ Keep track of latest selectedUser
+  const socketRef = useRef(socket);  // ✅ Keep track of latest socket connection
+
+  // ✅ Update ref whenever socket changes
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
 
   // ✅ Update ref whenever chatList changes
   useEffect(() => {
@@ -131,7 +137,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     if (!newMessage.trim()) return;
     
     // ✅ Check if socket is connected and user is selected
-    if (!socket) {
+    if (!socketRef.current) {
       toast.error("Connection lost. Please reconnect.");
       return;
     }
@@ -141,7 +147,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
       return;
     }
 
-    socket.emit("send_message", {
+    socketRef.current.emit("send_message", {
       to: selectedUser,
       message: newMessage,
     });
@@ -160,7 +166,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     console.log("✅ Upload successful:", result);
     
     // ✅ Check if socket is connected and user is selected
-    if (!socket) {
+    if (!socketRef.current) {
       console.error("❌ Socket is not connected");
       toast.error("Connection lost. Please reconnect.");
       return;
@@ -183,7 +189,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     });
     
     // send via socket.io with image
-    socket.emit("send_message", {
+    socketRef.current.emit("send_message", {
       to: selectedUserRef.current,
       message: newMessage,
       fileUrl: imageUrl,
@@ -255,13 +261,13 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
             setNewMessage(e.target.value);
 
             // ✅ Only emit typing if socket is connected
-            if (socket && selectedUser) {
-              socket.emit("typing", { to: selectedUser });
+            if (socketRef.current && selectedUser) {
+              socketRef.current.emit("typing", { to: selectedUser });
 
               clearTimeout(window.typingTimeout);
 
               window.typingTimeout = setTimeout(() => {
-                socket.emit("stop_typing", { to: selectedUser });
+                socketRef.current.emit("stop_typing", { to: selectedUser });
               }, 1000);
             }
           }}
