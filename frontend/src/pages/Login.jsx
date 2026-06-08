@@ -2,6 +2,7 @@ import { toast } from 'react-toastify';
 import { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from "../context/AuthContext";
+import BACKEND_URL from "../config/api.js";
 import "./AuthPages.css";
 function Login() {
   const [username, setUsername] = useState("");
@@ -63,7 +64,7 @@ function Login() {
 
     try {
       const response = await fetch(
-        "http://localhost:3000/api/auth/login",
+        `${BACKEND_URL}/api/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

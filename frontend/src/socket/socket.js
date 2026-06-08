@@ -1,8 +1,9 @@
 import { io } from "socket.io-client";
 import { toast } from "react-toastify";
+import BACKEND_URL from "../config/api.js";
 
 export const createSocket = (userId, token) => {
-  const socket = io("http://localhost:3000", {
+  const socket = io(BACKEND_URL, {
     auth: { 
       userId,
       token

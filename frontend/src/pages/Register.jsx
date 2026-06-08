@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "./AuthPages.css";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
+import BACKEND_URL from "../config/api.js";
 
 function Register() {
   const [username, setUsername] = useState("");
@@ -83,7 +84,7 @@ function Register() {
 
     try {
       const response = await fetch(
-        "http://localhost:3000/api/auth/register",
+        `${BACKEND_URL}/api/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

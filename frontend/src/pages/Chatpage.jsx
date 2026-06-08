@@ -4,6 +4,7 @@ import { AuthContext } from "../context/AuthContext";
 import { createSocket } from "../socket/socket";
 import Sidebar from "../sidebar";
 import ChatWindow from "../components/ChatWindow";
+import BACKEND_URL from "../config/api.js";
 import "./Chatpage.css";
 
 function Chatpage() {
@@ -32,7 +33,7 @@ function Chatpage() {
     }
     try {
       const response = await fetch(
-        `http://localhost:3000/api/users/search?query=${value}`,
+        `${BACKEND_URL}/api/users/search?query=${value}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
