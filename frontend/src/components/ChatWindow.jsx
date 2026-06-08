@@ -10,11 +10,17 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
   const [typing, setTyping] = useState("");
   const messagesEndRef = useRef(null);
   const chatListRef = useRef(chatList);  // ✅ Keep track of latest chatList
+  const selectedUserRef = useRef(selectedUser);  // ✅ Keep track of latest selectedUser
 
   // ✅ Update ref whenever chatList changes
   useEffect(() => {
     chatListRef.current = chatList;
   }, [chatList]);
+
+  // ✅ Update ref whenever selectedUser changes (fixes file upload to wrong user)
+  useEffect(() => {
+    selectedUserRef.current = selectedUser;
+  }, [selectedUser]);
 
   // Auto-scroll to latest message
   const scrollToBottom = () => {
@@ -138,36 +144,28 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     }
   };
 
-  if (!selectedUser) {
-    return (
-      <div className="chatwindow-container">
-        <div className="empty-chat">
-          <div style={{ fontSize: "48px", marginBottom: "10px" }}>💬</div>
-          <h2 style={{ margin: "0 0 8px 0" }}>No chat selected</h2>
-          <p style={{ margin: 0, color: "var(--text)" }}>
-            Select a conversation to start messaging
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const handleUploadSuccess = (result) => {
-    // extract url form cloudinary response
+    console.log("✅ Upload successful:", result);
+    
+    // extract url from cloudinary response (images only)
     const imageUrl = result.info.secure_url;
     const fileName = result.info.original_filename || "image";
-    const fileSize = result.info.bytes || 0 ;
-
-    // send via socket.io with file info
-    socket.emit("send_message",{
-      to : selectedUser,
-      message: newMessage,
-      fileUrl : imageUrl,
-      fileName : fileName,
-      fileSize : fileSize,
-      fileType : "image"
+    
+    console.log("📤 Emitting send_message with image:", {
+      to: selectedUserRef.current,
+      fileUrl: imageUrl,
+      fileName: fileName
     });
-    setNewMessage("")
+    
+    // send via socket.io with image
+    socket.emit("send_message", {
+      to: selectedUserRef.current,
+      message: newMessage,
+      fileUrl: imageUrl,
+      fileName: fileName
+    });
+    
+    setNewMessage("");
   };
 
   return (
@@ -193,24 +191,14 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
             <div className="message-content">
               {msg.message}
             </div>
-            {/* ✅ Display file if exists */}
+            {/* Display image if exists */}
             {msg.file && (
               <div className="message-file">
-                {msg.file.type === "image" ? (
-                  <img 
-                    src={msg.file.url} 
-                    alt={msg.file.name}
-                    className="file-image"
-                  />
-                ) : (
-                  <a 
-                    href={msg.file.url} 
-                    download={msg.file.name}
-                    className="file-link"
-                  >
-                    📎 {msg.file.name}
-                  </a>
-                )}
+                <img 
+                  src={msg.file.url} 
+                  alt={msg.file.name}
+                  className="file-image"
+                />
               </div>
             )}
           </div>
@@ -221,7 +209,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
       <div className="input-container">
         <CldUploadWidget 
           cloudName = {CLOUDINARY_CLOUD_NAME}
-          uploadPreset="convosync_upload"
+          uploadPreset="convosync_upload_v2"
           onSuccess={handleUploadSuccess}
         >
           {({open}) => (

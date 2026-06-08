@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const authRoutes = require("./routes/auth");
+const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
@@ -24,7 +24,7 @@ const generalLimiter = rateLimit({
 // Strict limiter for auth (login/register)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: 20,
   message: "Too many login attempts , please try again later"
 });
 

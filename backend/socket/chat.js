@@ -100,15 +100,17 @@ const chatSocket = (io) => {
           { from: to, to: from }
         ]
       })
-      .sort({ time: 1 })
+      .sort({ time: -1 })  // ✅ Sort NEWEST first
       .limit(20);
 
+      // ✅ Reverse to display oldest → newest chronologically
       messages.reverse().forEach(msg => {
         socket.emit("receive_message", {
           from: msg.from,
           to: msg.to,
           message: msg.message,
-          status: msg.status
+          status: msg.status,
+          file : msg.file 
         });
       });
 
@@ -131,7 +133,7 @@ const chatSocket = (io) => {
     // =============================
     // SEND MESSAGE
     // =============================
-    socket.on("send_message", async ({ to, message, fileUrl, fileName, fileSize, fileType }) => {
+    socket.on("send_message", async ({ to, message, fileUrl, fileName, fileSize,fileType }) => {
       const from = socket.user.username;
 
       if (!from) {
