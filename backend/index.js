@@ -14,6 +14,9 @@ const authMiddleware = require("./middleware/authMiddleware");
 const app = express();
 const server = http.createServer(app);
 
+// Trust proxy (required for rate limiting on Render)
+app.set('trust proxy', 1);
+
 // general api rateLimiter 
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
