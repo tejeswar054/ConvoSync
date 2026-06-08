@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { CldUploadWidget } from "next-cloudinary";
+import { toast } from "react-toastify";
 import "./ChatWindow.css";
 const CLOUDINARY_CLOUD_NAME = "dzn51fdrx"; // cloud dashboard name 
 
@@ -128,6 +129,17 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
 
   const sendMessage = () => {
     if (!newMessage.trim()) return;
+    
+    // ✅ Check if socket is connected and user is selected
+    if (!socket) {
+      toast.error("Connection lost. Please reconnect.");
+      return;
+    }
+    
+    if (!selectedUser) {
+      toast.error("Please select a user to message.");
+      return;
+    }
 
     socket.emit("send_message", {
       to: selectedUser,
@@ -146,6 +158,19 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
 
   const handleUploadSuccess = (result) => {
     console.log("✅ Upload successful:", result);
+    
+    // ✅ Check if socket is connected and user is selected
+    if (!socket) {
+      console.error("❌ Socket is not connected");
+      toast.error("Connection lost. Please reconnect.");
+      return;
+    }
+    
+    if (!selectedUserRef.current) {
+      console.error("❌ No user selected");
+      toast.error("Please select a user to send the image.");
+      return;
+    }
     
     // extract url from cloudinary response (images only)
     const imageUrl = result.info.secure_url;
@@ -229,13 +254,16 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
           onChange={(e) => {
             setNewMessage(e.target.value);
 
-            socket.emit("typing", { to: selectedUser });
+            // ✅ Only emit typing if socket is connected
+            if (socket && selectedUser) {
+              socket.emit("typing", { to: selectedUser });
 
-            clearTimeout(window.typingTimeout);
+              clearTimeout(window.typingTimeout);
 
-            window.typingTimeout = setTimeout(() => {
-              socket.emit("stop_typing", { to: selectedUser });
-            }, 1000);
+              window.typingTimeout = setTimeout(() => {
+                socket.emit("stop_typing", { to: selectedUser });
+              }, 1000);
+            }
           }}
           onKeyPress={handleKeyPress}
           placeholder="Type a message..."
