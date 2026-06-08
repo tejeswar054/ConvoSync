@@ -21,4 +21,17 @@ const messageSchema = new mongoose.Schema({
   }, { _id: false })
 });
 
+// 📍 Add indexes for fast queries
+// ✅ Compound index: Find messages between two specific users (most important)
+messageSchema.index({ from: 1, to: 1 });
+
+// ✅ Single index: Find all messages FROM a user (for user's sent messages)
+messageSchema.index({ from: 1 });
+
+// ✅ Single index: Find all messages TO a user (for user's received messages)
+messageSchema.index({ to: 1 });
+
+// ✅ Compound index: Find unread messages between specific users (for unread count)
+messageSchema.index({ from: 1, to: 1, status: 1 });
+
 module.exports = mongoose.model("Message", messageSchema);
