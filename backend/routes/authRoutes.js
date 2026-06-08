@@ -8,6 +8,22 @@ router.post("/register",async (req,res) => {
     try {
         const {username,password} = req.body;
 
+        //validation of the user 
+        if (!username || username.trim().length < 3) {
+            return res.status(400).json({
+                message:"Username must be at least 3 characters"
+            });
+        }
+        if(username.length > 20){
+            return res.status(400).json({
+                message:"Username must be max 20 characters"
+            });
+        }
+        if(!password || password.length < 6){
+            return res.status(400).json({
+                message:"Password must be at least 6 characters"
+            });
+        }
         // check existing user
         const existingUser = await User.findOne({username});
         if (existingUser) {
