@@ -10,6 +10,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
   const [status, setStatus] = useState("Offline 🔴");
   const [typing, setTyping] = useState("");
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);  // ✅ NEW: Reference to messages container
   const chatListRef = useRef(chatList);  // ✅ Keep track of latest chatList
   const selectedUserRef = useRef(selectedUser);  // ✅ Keep track of latest selectedUser
   const socketRef = useRef(socket);  // ✅ Keep track of latest socket connection
@@ -29,11 +30,20 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
     selectedUserRef.current = selectedUser;
   }, [selectedUser]);
 
-  // Auto-scroll to latest message
+  // ✅ Auto-scroll to latest message with timeout to ensure DOM is rendered
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+      // Fallback: scroll container directly
+      if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      }
+    }, 0);
   };
 
+  // ✅ Scroll when messages change
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -213,7 +223,7 @@ function ChatWindow({ socket, userId, selectedUser, unreadCounts, setUnreadCount
         </div>
       </div>
 
-      <div className="messages-container">
+      <div className="messages-container" ref={messagesContainerRef}>
         {messages.map((msg, index) => (
           <div
             key={index}
